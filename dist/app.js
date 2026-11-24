@@ -28,13 +28,14 @@ for(const line of [...window.communityEntries,...window.entries]){
   records.set(id,rec);
 }
 const extras=(window.extraEntries||[]).map((r,i)=>({...r,extra:true,id:'gtadb|'+(r.sourceId??i),refs:[r.url]}));
-const all=[...extras.filter(r=>r.cat==='region'),...records.values(),...extras.filter(r=>r.cat!=='region'&&r.evidence==='approximate'),...extras.filter(r=>r.cat!=='region'&&r.evidence!=='approximate')];
+const gameplay=(window.gameplayEntries||[]).map(r=>({...r,gameplay:true,refs:[r.url]}));
+const all=[...extras.filter(r=>r.cat==='region'),...records.values(),...gameplay,...extras.filter(r=>r.cat!=='region'&&r.evidence==='approximate'),...extras.filter(r=>r.cat!=='region'&&r.evidence!=='approximate')];
 const tagCounts=new Map();
 for(const r of all){
  const caseUrl=r.refs.find(url=>typeof url==='string' && /^https:\/\/mapheist\.com\/en\/case\/[a-z0-9-]+\/$/.test(url));
  if(caseUrl)r.mapheistId=caseUrl.split('/').at(-2);
  for(const t of r.tags||[])tagCounts.set(t,(tagCounts.get(t)||0)+1);
- r.search=normalize([r.name,r.en,r.sourceId,r.gameAddress,r.realAddress,r.desc,regions[r.region],regionNames[r.region],r.cat,cats[r.cat][0],r.cat==='business'?'店铺':'',...(r.tags||[]).map(tagLabel)].join(' '));
+ r.search=normalize([r.name,r.en,r.sourceTitle,r.gameName,r.sourceId,r.gameAddress,r.realAddress,r.desc,regions[r.region],regionNames[r.region],r.cat,cats[r.cat][0],r.cat==='business'?'店铺':'',...(r.tags||[]).map(tagLabel)].join(' '));
 }
 for(const [tag,count] of [...tagCounts].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))){
  $('tag').add(new Option(tagLabel(tag)+' ('+count+')',tag));
@@ -45,7 +46,7 @@ let saved;
 try{saved=new Set(JSON.parse(localStorage.getItem('leonida.bookmarks.v1')||'[]'))}catch{saved=new Set()}
 let category='all',onlySaved=false,visible=[],selected=null,zoom=1,cx=0,cy=0,baseSize=0;
 const hasXY=r=>Number.isFinite(r.rawX)&&Number.isFinite(r.rawY);
-function pos(r){return hasXY(r)?map.project(r.rawX,r.rawY):(r.extra?null:map.anchors[r.region])}
+function pos(r){return hasXY(r)?map.project(r.rawX,r.rawY):(r.extra || r.mapheistId || r.gameplay ? null : map.anchors[r.region])}
 const playerKey='leonida.position.yanis-v16.v1';
 let player=null,nearby=false,placing=false,placementTap=null;
 let gpsOpen=false,destination=null,routeResult=null,placementKind='start';
@@ -234,7 +235,7 @@ function refresh(){
      nearDistances.set(r.id,meters);
    }
    if($('hasPhoto').checked&&!gamePhotoIds.has(r.sourceId))return false;
-   if(scope==='atlas'&&!r.extra||scope==='guide'&&r.extra)return false;
+   if(scope==='atlas'&&!r.extra||scope==='guide'&&(r.extra||r.gameplay)||scope==='gameplay'&&!r.gameplay)return false;
    if(layer==='unplaced'&&(!r.extra||hasXY(r)))return false;
    if(layer&&layer!=='unplaced'&&r.layer!==layer)return false;
    return (!tag||r.tags?.includes(tag))&&(!onlySaved||saved.has(r.id))&&(category==='all'||category===r.cat)&&(!region||region===r.region)&&words.every(w=>r.search.includes(w));
@@ -257,7 +258,7 @@ function refresh(){
  draw();
 }
 function popup(){const p=$('popup');p.hidden=false;p.innerHTML='';p.append(button('x','×',()=>{clearPop();refresh()}));p.firstChild.setAttribute('aria-label','关闭详情');return p}
-const originalPhotoRoot='https://raw.githubusercontent.com/rolux/gtadb.org/5c1d69ff864623d181da5457afaacd00b623e1a4/map/photos/6/';
+const originalPhotoRoot='https://raw.githubusercontent.com/rolux/gtadb.org/d406fea099e1df2bce42fd6b87eed04bce646629/map/photos/6/';
 function showPhoto(record){
  const id=record.sourceId;
  const original=window.localPhotoOriginals?'photos-hd/'+id+'.jpg':originalPhotoRoot+id+'%2Cig.jpg';
@@ -284,7 +285,16 @@ function openRecord(r,focus){
  selected=r.id;
  if(focus){const point=pos(r);if(point){zoom=Math.min(maxZoom(),Math.max(zoom,hasXY(r)?2.4:1.45));centerAt(point)}if(matchMedia('(max-width:760px)').matches)$('viewport').scrollIntoView({block:'start',behavior:'smooth'})}
  refresh();const p=popup();setTone(p,r.cat);
- const body=document.createElement('div');body.innerHTML='<div class="tag">'+icon(r.cat)+' '+cats[r.cat][0]+' / '+esc(regions[r.region])+'</div><h3>'+esc(r.name)+'</h3><small class="muted">'+esc(r.en)+'</small><p>'+esc(r.desc)+'</p><div class="muted">'+(hasXY(r)?'社区推定点位':pos(r)?'按关联地区展示 · 具体坐标待核实':'具体位置待核实')+'</div>';p.append(body);
+ const body=document.createElement('div');body.innerHTML='<div class="tag">'+icon(r.cat)+' '+cats[r.cat][0]+' / '+esc(regions[r.region])+'</div><h3>'+esc(r.name)+'</h3><small class="muted">'+esc(r.sourceTitle||r.en)+'</small><p>'+esc(r.desc)+'</p><div class="muted">'+(hasXY(r)?'社区推定点位':pos(r)?'按关联地区展示 · 具体坐标待核实':'具体位置待核实')+'</div>';p.append(body);
+ if(r.gameplay){
+   const line=document.createElement('p');line.className='muted';line.textContent='Open GTA 6 Map · '+(r.sourceRegion||'社区定位')+' · 来源页可查看游戏截图';body.append(line);
+ }
+ if(r.mapheistId){
+   const confidence={community:'社区推定',official:'官方资料',press:'媒体报道',unverified:'待核实'};
+   for(const [label,value] of [['游戏内名称',r.gameName],['游戏内位置',r.gameAddress],['现实原型线索',r.realAddress],['来源标注',confidence[r.confidence]]]){
+     if(value){const line=document.createElement('p');line.className='muted';line.textContent=label+' · '+value;body.append(line)}
+   }
+ }
  if(nearby&&nearDistances.has(r.id)){
    const distance=document.createElement('p');distance.textContent='距我的位置 · '+nearLabel(r);body.append(distance);
  }
@@ -506,15 +516,15 @@ for(const id of ['scope','layer','tag','hasPhoto'])$(id).onchange=()=>{clearPop(
 $('query').oninput=()=>{clearPop();refresh()};
 $('region').onchange=()=>{clearPop();const p=map.anchors[$('region').value];if(!nearby){if(p){zoom=Math.min(maxZoom(),1.8);centerAt(p)}else fit()}refresh()};
 function dialog(title,html,wide=false){$('dialogtitle').textContent=title;$('infoBody').innerHTML=html;$('info').classList.toggle('wide',wide);$('info').showModal()}
-$('sources').onclick=()=>dialog('地图与资料来源','<p>首版整理于 2026 年 11 月 19 日。地图点位来自社区对照预告片与截图的推定。仅知所属地区的条目集中在地区标记下，人物可能随剧情移动。中文名含本站暂译。</p><p>底图依据 <a href="https://github.com/rolux/gtadb.org" target="_blank" rel="noopener">YANIS v16 / GTADB 社区地图</a>，使用与 Mapheist 同源的 YANIS v16 原色切片，按坐标配准和裁切，最高层覆盖 19000 × 19000 个原图像素。切片来自 <a href="https://github.com/navanem/gta6-leonida-atlas/tree/0c7434f5bd5ed59a58aaa75a3ba7c3734fa0c4d0/public/assets/street-leonida/maps/gtadb-yanis-16-z5" target="_blank" rel="noopener">Leonida Atlas 保存的固定版本</a>。社区目录同步自 GTADB / Map GTA 固定版本 5c1d69f，收录 3431 条记录和参考项目的 6 个地区，沿用来源分类、标签与证据图层。无坐标记录仅供检索。附近推荐使用有坐标点位，直线距离按下述 Mapheist 的 YANIS v16 比例尺估算。地点数据译自 <a href="https://mapheist.com/en/data/" target="_blank" rel="noopener">Mapheist</a>，两者均采用 <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>。</p><p>游戏画面来自 <a href="https://github.com/rolux/gtadb.org/tree/5c1d69ff864623d181da5457afaacd00b623e1a4/map/photos/6" target="_blank" rel="noopener">GTADB 公开游戏图片目录</a>，按标记编号对应，预览图经过缩放和 WebP 转码。游戏画面版权归 Rockstar Games 等权利人所有。任务、店铺和隐藏要素另据首发攻略整理。每条详情附对应出处。场景封面来自 <a href="https://www.rockstargames.com/VI" target="_blank" rel="noopener">Rockstar Games</a>。GPS 路网由本站从上述 YANIS v16 社区底图提取道路中心线，采用 CC BY 4.0。线路按已连接的中心线估算，单行、转向限制与立交层级尚待游戏实测。虚线表示端点到参考道路的直线间隔。本站是非官方个人查询工具。</p>');
-$('extmap').onclick=()=>dialog('Mapheist 社区地图','<p><a href="https://mapheist.com/en/map/" target="_blank" rel="noopener">打开 Mapheist 全屏原图</a> · <a href="https://mapheist.com/leonida-drive/?lang=en" target="_blank" rel="noopener">对照 Leonida Drive 路线</a></p><iframe loading="lazy" title="Mapheist 英文社区互动地图" src="https://mapheist.com/en/embed/leonida/"></iframe>',true);
+$('sources').onclick=()=>dialog('地图与资料来源','<p>2026 年 11 月 24 日核对更新。Mapheist 的 11 月 23 日开放数据有 94 条，77 条提供游戏地图坐标。在线对照图现已使用暂停菜单截图拼接，未覆盖区域使用灰色底图。地图点位来自社区对照预告片与截图的推定。仅知所属地区的条目集中在地区标记下，人物可能随剧情移动。中文名含本站暂译。</p><p>底图依据 <a href="https://github.com/rolux/gtadb.org" target="_blank" rel="noopener">YANIS v16 / GTADB 社区地图</a>，使用 YANIS v16 原色切片，按坐标配准和裁切，最高层覆盖 19000 × 19000 个原图像素。切片来自 <a href="https://github.com/navanem/gta6-leonida-atlas/tree/0c7434f5bd5ed59a58aaa75a3ba7c3734fa0c4d0/public/assets/street-leonida/maps/gtadb-yanis-16-z5" target="_blank" rel="noopener">Leonida Atlas 保存的固定版本</a>。社区目录同步自 GTADB / Map GTA 固定版本 d406fea，收录 3754 条记录和参考项目的 6 个地区，沿用来源分类、标签与证据图层。无坐标记录仅供检索。附近推荐使用有坐标点位，直线距离按下述 Mapheist 的 YANIS v16 比例尺估算。地点数据译自 <a href="https://mapheist.com/en/data/" target="_blank" rel="noopener">Mapheist</a>，两者均采用 <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>。</p><p>游戏画面来自 <a href="https://github.com/rolux/gtadb.org/tree/d406fea099e1df2bce42fd6b87eed04bce646629/map/photos/6" target="_blank" rel="noopener">GTADB 公开游戏图片目录</a>，按标记编号对应，预览图经过缩放和 WebP 转码。游戏画面版权归 Rockstar Games 等权利人所有。游玩点位摘自 <a href="https://github.com/fbritoferreira/gta6" target="_blank" rel="noopener">Open GTA 6 Map（fbritoferreira）</a>，采用 CC BY 4.0，本站转换地图坐标、翻译名称并整理分类。任务、店铺和隐藏要素另据首发攻略整理。每条详情附对应出处。场景封面来自 <a href="https://www.rockstargames.com/VI" target="_blank" rel="noopener">Rockstar Games</a>。GPS 路网由本站从上述 YANIS v16 社区底图提取道路中心线，采用 CC BY 4.0。线路按已连接的中心线估算，单行、转向限制与立交层级尚待游戏实测。虚线表示端点到参考道路的直线间隔。本站是非官方个人查询工具。</p>');
+$('extmap').onclick=()=>dialog('Mapheist 实机暂停地图（在线）','<p><a href="https://mapheist.com/en/map/" target="_blank" rel="noopener">打开 Mapheist 全屏实机图</a> · <a href="https://mapheist.com/leonida-drive/?lang=en" target="_blank" rel="noopener">对照 Leonida Drive 路线</a></p><iframe loading="lazy" title="Mapheist 英文社区互动地图" src="https://mapheist.com/en/embed/leonida/"></iframe>',true);
 $('closeInfo').onclick=()=>$('info').close();$('info').onclose=()=>$('infoBody').replaceChildren();
 $('base').src='tiles/1/0-0.webp';refresh();
 let initialPoi=new URLSearchParams(location.search).get('poi');
 new ResizeObserver(()=>{
  fit();
  if(initialPoi){
-   const record=all.find(r=>r.sourceId===initialPoi || r.mapheistId===initialPoi);
+   const record=all.find(r=>r.sourceId===initialPoi || r.mapheistId===initialPoi || (r.gameplay && r.id===initialPoi));
    initialPoi=null;
    if(record)openRecord(record,true);
  }

@@ -6,6 +6,10 @@ Keep this map open while you explore Leonida. Look up shops, missions, secrets a
 
 ![Leonida overview with clustered map markers and the searchable category index](docs/images/atlas.png)
 
+## November 24, 2026 data update
+
+GTADB added 323 landmarks and revised 39 existing positions. Mapheist located Electric Fang Tattoo, the PTT Youngin$ base and Rideout Customs, and withdrew three previous positions. Select **Open GTA 6 Map 游玩点位** in the source filter to explore 70 curated gameplay records. We converted coordinates, translated labels and mapped categories. Each record links to a source page with imagery. [Open GTA 6 Map (fbritoferreira)](https://github.com/fbritoferreira/gta6) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
 ## Find your way around
 
 | To do this | Use these controls |
@@ -28,13 +32,13 @@ The pink line follows the mapped roads. Dashed sections show the straight-line g
 
 ## Run offline
 
-- **Player download.** Get `gta-6-map-guide-offline.zip` from Releases, extract the entire folder and open `GTA6-Atlas/index.html`. It includes map tiles, the place index, the road network and 1,348 full-size game images. No installation is needed.
+- **Player download.** Get `gta-6-map-guide-offline.zip` from Releases, extract the entire folder and open `GTA6-Atlas/index.html`. It includes map tiles, the place index, the road network and 1,352 full-size game images. No installation is needed.
 - **Source checkout.** Clone this repository or extract GitHub’s Source code ZIP, then open [dist/index.html](dist/index.html). Tiles, routing and screenshot previews work offline. In this edition, full-size images load from the upstream image archive.
 
-This version includes 3,628 entries and map detail up to 19,000 × 19,000 pixels. You place your position marker manually. Your position and favorites are stored in the browser.
+This version includes 4,021 entries and map detail up to 19,000 × 19,000 pixels. You place your position marker manually. Your position and favorites are stored in the browser.
 
 ## Credits
 
 - The YANIS v16 map and location catalogue are credited to GTADB and its community contributors. Source tiles were cropped, re-tiled and compressed to WebP. Road centerlines were extracted from the map, with selected downtown and cross-bay sections reviewed against the source imagery. [GTADB](https://github.com/rolux/gtadb.org) · [Pinned tile archive](https://github.com/navanem/gta6-leonida-atlas/tree/0c7434f5bd5ed59a58aaa75a3ba7c3734fa0c4d0/public/assets/street-leonida/maps/gtadb-yanis-16-z5) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - Mapheist supplies additional place coordinates, evidence and real-world matches. Its records were translated and categorized for the Chinese interface. Individual place cards link to their sources. [Mapheist open data](https://mapheist.com/en/data/) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-- Game imagery comes from the GTADB image archive. Game artwork and trademarks belong to Rockstar Games and their respective owners. This is an unofficial player guide. [Image archive](https://github.com/rolux/gtadb.org/tree/5c1d69ff864623d181da5457afaacd00b623e1a4/map/photos/6)
+- Game imagery comes from the GTADB image archive. Game artwork and trademarks belong to Rockstar Games and their respective owners. This is an unofficial player guide. [Image archive](https://github.com/rolux/gtadb.org/tree/d406fea099e1df2bce42fd6b87eed04bce646629/map/photos/6)
